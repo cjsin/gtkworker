@@ -20,8 +20,9 @@ build:
   script:
     - python3 -m venv venv
     - . venv/bin/activate
+    - pip install --upgrade pip
     - pip install --upgrade build
-    - python -m build build
+    - python -m build
   artifacts:
     paths:
       - dist/*.whl
