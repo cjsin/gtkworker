@@ -12,11 +12,11 @@ before_script:
   - python -V  # Print out python version for debugging
 
 stages:
-  - a
-  - b
+  - build
+  - install
 
 build:
-  stage: a
+  stage: build
   script:
     - python3 -m venv venv
     - . venv/bin/activate
@@ -28,8 +28,8 @@ build:
       - dist/*.whl
 
 test-install:
-  stage: b
+  stage: install
   script:
     - python3 -m venv venv
     - . venv/bin/activate
-    - pip instal dist/*.whl
+    - pip install dist/*.whl
