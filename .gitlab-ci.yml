@@ -18,6 +18,9 @@ stages:
 build:
   stage: a
   script:
+    - python3 -m venv venv
+    - . venv/bin/activate
+    - pip install --upgrade build
     - python -m build build
   artifacts:
     paths:
