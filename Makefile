@@ -46,13 +46,13 @@ version:
 	@echo Wheel:   $(DISTWHEEL)
 	@echo Sources: $(SOURCES)
 
-lint: venv
+lint: venv-install
 	$(WITH_VENV) pylint $(SRC)
 
-$(README_API): venv $(SOURCES)
+$(README_API): venv-install $(SOURCES)
 	$(WITH_VENV) $(WITH_PYPATH) pdoc $(PACKAGE_NAME) > $(README_API)
 
-docs-html: venv
+docs-html: venv-install
 	mkdir -p docs
 	$(WITH_VENV) $(WITH_PYPATH) pdoc --html -o docs/html $(PACKAGE_NAME)
 
