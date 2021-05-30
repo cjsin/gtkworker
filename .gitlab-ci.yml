@@ -2,6 +2,7 @@ image: python:3.9-buster
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PACKAGE_NAME: gtkworker
 
 cache:
   paths:
@@ -14,6 +15,8 @@ before_script:
 stages:
   - build
   - install
+  - test
+  - docs
 
 build:
   stage: build
@@ -26,10 +29,40 @@ build:
   artifacts:
     paths:
       - dist/*.whl
+  tags:
+    - container
 
 test-install:
   stage: install
   script:
     - python3 -m venv venv
     - . venv/bin/activate
+    - pip install --upgrade pip
     - pip install dist/*.whl
+  tags:
+    - container
+
+run-examples:
+  stage: test
+  script:
+    - python3 -m venv venv
+    - . venv/bin/activate
+    - pytest $PACKAGE_NAME
+  tags:
+    - container
+
+docs:
+  stage: docs
+  script:
+    - python3 -m venv venv
+    - . venv/bin/activate
+    - pip install pdoc3
+    - mkdir -p docs
+    - PYTHONPATH=src pdoc $PACKAGE_NAME > README_api.md
+    - PYTHONPATH=src pdoc --html -o docs/html $PACKAGE_NAME
+  artifacts:
+    paths:
+      - README_api.md
+      - docs/html/$(PACKAGE_NAME)/**/*.*
+  tags:
+    - container
