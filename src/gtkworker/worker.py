@@ -1,14 +1,12 @@
 #!/bin/env python3
-
-import time
-import datetime
-import traceback
-from concurrent import futures
+""" Provides WorkItem and WorkQueue classes for capturing work results in a queue """
 from concurrent.futures import ThreadPoolExecutor
-from locked_dict.locked_dict import LockedDict
 from collections import OrderedDict
+from locked_dict.locked_dict import LockedDict
 
 class WorkItem:
+    """ Data structure for capturing the work to be done and the result """
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
     CREATED           = 'created'
     REGISTERED        = 'registered'
     EXECUTING         = 'executing'
@@ -23,6 +21,7 @@ class WorkItem:
     #DELETED           = 'deleted'
 
     def __init__(self, func=None, callback=None, name=None, key=None, owner=None):
+        # pylint: disable=too-many-arguments
         self.func = func
         self.callback = callback
         self.name = name
@@ -39,14 +38,23 @@ class WorkItem:
         self.running = False
 
 class WorkQueue:
+    """
+    A queue which can have work submitted to it with a handler to be called
+    when the work completes
+    """
     def __init__(self, max_workers=None, completion_handler=None):
         self.max_workers = max_workers or 1
+        # pylint: disable=consider-using-with
         self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
         self.running = LockedDict()
         self.counter = 0
         self.completion_handler = completion_handler
 
     def nrunning(self):
+        """
+        Returns
+          int - the number of tasks still running
+        """
         ret = 0
         with self.running:
             ret = len(self.running)
@@ -60,6 +68,7 @@ class WorkQueue:
         return ret
 
     def _execute(self, workitem):
+        # pylint: disable=no-self-use
         workitem.status = WorkItem.EXECUTING
         result = workitem.func(*(workitem.args), **workitem.kwargs)
         # The workitem may have been marked as being cancelled.
@@ -74,6 +83,22 @@ class WorkQueue:
             workitem.status = WorkItem.REGISTERED
 
     def submit(self, func, callback, *args, **kwargs):
+        """
+        Sumbits some work to be performed.
+
+        Parameters:
+            func : callable
+                The function which performs the work
+            callback: callable
+                The function which will receive the results
+            args
+                Arguments to the func
+            kwargs
+                Keyword arguments to the func
+
+        Returns:
+            WorkItem : a WorkItem object encapsulating the submitted job information
+        """
         workitem = WorkItem()
         workitem.func = func
         workitem.callback = callback
@@ -87,6 +112,7 @@ class WorkQueue:
         return workitem
 
     def _callback(self, workitem):
+        # pylint: disable=no-self-use
         workitem.status = WorkItem.RUNNING_CALLBACK
         workitem.callback(workitem.result)
         workitem.status = WorkItem.CALLBACK_COMPLETE
@@ -96,11 +122,18 @@ class WorkQueue:
             self._callback(workitem)
 
     def cancel(self, workitem):
+        """
+        Cancel a workitem
+        """
+        # pylint: disable=no-self-use
         workitem.status = WorkItem.CANCELLING
         cancel_result = workitem.future.cancel()
         return cancel_result
 
     def get_all(self):
+        """
+        Return all work items still running
+        """
         items = OrderedDict()
         with self.running:
             for k in sorted(list(self.running.keys())):
@@ -108,13 +141,18 @@ class WorkQueue:
         return items
 
     def cancel_all(self):
+        """
+        Cancel all items still running
+        """
+
         # The future.cancel() method seems to block, and therefor
         # cannot be used while self.running is locked, without causing deadlock
         # So we have to copy out the running items and then cancel them.
         for _key, workitem in self.get_all().items():
             self.cancel(workitem)
-        
+
     def _done(self, workitem):
+        # pylint: disable=invalid-name
         f = workitem.future
         if f.done():
             f.done = True

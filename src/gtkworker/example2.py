@@ -1,5 +1,8 @@
 #!/bin/env python3
-import time
+""" example usage for gtkworker """
+
+# pylint: disable=invalid-name,wrong-import-position
+
 import datetime
 import subprocess
 import random
@@ -14,38 +17,46 @@ from gi.repository import GLib, Gtk
 from gtkworker.gtkworker import GtkWorkQueue
 
 def datestr(d):
+    """ format a datetime """
     return d.strftime("%Y-%m-%d-%H-%M-%S")
 
 def now():
+    """ return the current datetime """
     return datetime.datetime.now()
 
 def do_work():
+    """ example slow work function """
     try:
-        sleepsec = random.randint(0,500) / 100.0 
+        # pylint: disable=bare-except
+        sleepsec = random.randint(0,500) / 100.0
         cmd = [ "sleep", str(sleepsec) ]
         #cmd = [ "find", "/usr" ]
-        p = subprocess.Popen(cmd)
-        p.wait()
+        with subprocess.Popen(cmd) as p:
+            p.wait()
         return datestr(now())
     except:
         return None
 
 def return_1(func):
+    """ call a func and return 1 for a gtk handler """
     def ret():
         func()
         return 1
     return ret
 
 def return_0(func):
+    """ call a func and return 0 for a gtk handler """
     def ret():
         func()
         return 0
     return ret
 
 class AttrTableModel(Gtk.ListStore):
+    """ A tree model for showing attributes of an object """
     def _cell(self, rowobj, attrname):
+        # pylint: disable=no-self-use
         v = getattr(rowobj, attrname)
-        if type(v) == types.MethodType:
+        if isinstance(v, types.MethodType):
             v = v()
         if v is None:
             v = ""
@@ -62,9 +73,11 @@ class AttrTableModel(Gtk.ListStore):
         self.add_all(items)
 
     def add_object(self, o):
+        """ add an object as a new row """
         self.append([ self._cell(o, c) for c in self.columns])
 
     def add_all(self, items):
+        """ add a collection of objects as new rows """
         if isinstance(items, dict):
             for i in items.values():
                 self.add_object(i)
@@ -75,6 +88,7 @@ class AttrTableModel(Gtk.ListStore):
             raise ValueError("Bad argument to add_all" + str(items))
 
 class ObjAttrTreeView(Gtk.TreeView):
+    """ A tree view with text columns for showing object attributes """
     def __init__(self, model=None):
         super().__init__(model=model)
         columns = model.columns
@@ -87,7 +101,18 @@ class ObjAttrTreeView(Gtk.TreeView):
         self.set_headers_visible(True)
         self.show()
 
+class ScrolledWidget(Gtk.ScrolledWindow):
+    """ Convenience class for making widgets scrollable """
+    def __init__(self, widget):
+        super().__init__()
+        self.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        widget.show()
+        self.add(widget)
+        self.show()
+
 class TestWindow(Gtk.Window):
+    """ a window containing some widgets to demonstrate gtkworker usage """
+    # pylint: disable=too-many-instance-attributes
     def __init__(self):
         super().__init__()
         self.work = GtkWorkQueue(max_workers=5, completion_handler=self._completed)
@@ -95,17 +120,19 @@ class TestWindow(Gtk.Window):
         self.box.show()
         self.status = self._label()
         self.when = self._label()
-        self.box.pack_start(self._button("Start"), False, False, 0)
-        self.box.pack_start(self.when, False, False, 0)
         self.columns = [ "key", "status", "result", "exception" ]
         self.running = self._create_model()
         self.completed = []
         self.rview = ObjAttrTreeView(model=self.running)
         self.cview = ObjAttrTreeView(model=self._create_model())
+        self.rscroll = ScrolledWidget(self.rview)
+        self.cscroll = ScrolledWidget(self.cview)
+        self.box.pack_start(self._button("Start"), False, False, 0)
+        self.box.pack_start(self.when, False, False, 0)
         self.box.pack_start(self._label("Running:"), False, False, 2)
-        self.box.pack_start(self.rview, True, True, 0)
+        self.box.pack_start(self.rscroll, True, True, 0)
         self.box.pack_start(self._label("Completed:"), False, False, 2)
-        self.box.pack_start(self.cview, True, True, 0)
+        self.box.pack_start(self.cscroll, True, True, 0)
         self.box.pack_start(self.status, False, False, 0)
         self.box.pack_start(self._button("Cancel"), False, False, 0)
         self.box.pack_start(self._button("Quit"), False, False, 0)
@@ -126,6 +153,8 @@ class TestWindow(Gtk.Window):
         self.cview.set_model(self._create_model(self.completed))
 
     def _label(self, text=None):
+        """ create and show a label """
+        # pylint: disable=no-self-use
         if text is None:
             text = ""
         lbl = Gtk.Label(label=text)
@@ -152,7 +181,7 @@ class TestWindow(Gtk.Window):
     def _start(self, *_args):
         self.work.submit(do_work, self._done)
         self._update_gui()
-    
+
     def _cancel(self, *_args):
         self.work.cancel_all()
         self._update_gui()
@@ -162,6 +191,7 @@ class TestWindow(Gtk.Window):
         Gtk.main_quit()
 
 def test_gtk_futures():
+    """ Test gtkworker to update a gui with results in the future """
     w = TestWindow()
     w.present()
     Gtk.main()

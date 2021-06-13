@@ -1,9 +1,11 @@
+"""
+Provides a queuing class that will call the completion routine in the Gtk thread via GLib.idle_add
+"""
+
+# pylint: disable=wrong-import-position,unused-import
 import gi
-
 gi.require_version("Gtk", "3.0")
-
 from gi.repository import Gtk, GLib
-
 from gtkworker.worker import WorkQueue, WorkItem
 
 class GtkWorkQueue(WorkQueue):
@@ -20,4 +22,3 @@ class GtkWorkQueue(WorkQueue):
             workitem.callback(workitem.result)
             workitem.status = WorkItem.CALLBACK_COMPLETE
         GLib.idle_add(gtk_callback)
-

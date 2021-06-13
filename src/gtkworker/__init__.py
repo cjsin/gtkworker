@@ -1,4 +1,5 @@
-# __all__ = [ 
+# pylint: disable=trailing-whitespace
+# __all__ = [
 #     'worker',
 #     'gtkworker',
 #     'example',

@@ -15,6 +15,7 @@ PIP_INSTALL  := $(WITH_VENV) pip install
 OPTIONALS    := attrdict
 MD_VIEWER    := retext
 DOCS_INDEX   := docs/html/$(PACKAGE_NAME)/index.html
+REQUIRE_VENV := test -d $(VENV) || make create-venv
 
 # Macros for use in path generation
 space :=
@@ -46,7 +47,8 @@ version:
 	@echo Wheel:   $(DISTWHEEL)
 	@echo Sources: $(SOURCES)
 
-lint: venv-install
+lint:
+	$(REQUIRE_VENV)
 	$(WITH_VENV) pylint $(SRC)
 
 $(README_API): venv-install $(SOURCES)

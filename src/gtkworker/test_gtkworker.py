@@ -1,6 +1,11 @@
+"""
+Tests for gtkworker class.
+Unfortunately testing the gtk side would require a display and
+wouldn't run in CI, so this does little more than import the module.
+"""
 
-# The gtkworker classes require a display running, so for
-# now the only test is whether the package is imported successfully.
+# pylint: disable=missing-function-docstring
 
 def test_imports():
+    # pylint: disable=unused-import,import-outside-toplevel
     import gtkworker

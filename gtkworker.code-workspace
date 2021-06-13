@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/*.egg-info": true,
+			"build": true,
+			"dist": true
+		}
+	}
+}
