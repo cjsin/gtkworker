@@ -4,7 +4,7 @@ variables:
   PACKAGE_NAME: gtkworker
   APT_PKG: libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0
 
-.prep-script-extra: &prep-script-extra:
+.prep-script-extra: &prep-script-extra
   - python3 -m venv venv
   - . venv/bin/activate
   - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
