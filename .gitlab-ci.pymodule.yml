@@ -1,0 +1,113 @@
+image: python:3.9-buster
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+.common:
+  tags:
+    - container
+
+.cache-paths: &cache-paths
+  paths:
+    - .cache/pip
+    - venv
+
+.cache-user:
+  extends: .common
+  cache:
+    <<: *cache-paths
+    policy: pull
+
+.cache-creator:
+  extends: .common
+  cache:
+    <<: *cache-paths
+    policy: push
+
+before_script:
+  - python3 -V  # Print out python version for debugging
+  - env| egrep 'CI_|PIP_' || true
+
+stages:
+  - prep
+  - build
+  - install
+  - test
+  - docs
+  - upload-successful
+
+.prep:
+  extends: .cache-creator
+  stage: prep
+  script:
+    - python3 -m venv venv
+    - . venv/bin/activate
+    - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
+    - pip install --upgrade pip build wheel setuptools pytest
+  rules:
+    - exists:
+        - venv/
+      when: never
+
+.build:
+  extends: .cache-user
+  stage: build
+  script:
+    - . venv/bin/activate
+    - python3 -m build
+  artifacts:
+    paths:
+      - dist/*.whl
+
+.test-install:
+  extends: .cache-user
+  stage: install
+  script:
+    - if test -n "${APT_PKG}"; then apt-get update; apt -y install $APT_PKG ; fi
+    - . venv/bin/activate
+    - pip list
+    - pip install dist/*.whl
+    - pip list
+
+.pytest:
+  extends: .cache-user
+  stage: test
+  script:
+    - . venv/bin/activate
+    - pip install dist/*.whl
+    - pytest $PACKAGE_NAME
+
+.run-examples:
+  extends: .cache-user
+  stage: test
+  # specific ci files should define the script steps
+
+.docs-stage:
+  extends: .cache-user
+  stage: docs
+  script:
+    - . venv/bin/activate
+    - pip install pytest pdoc3 dist/*.whl
+    - mkdir -p public
+    - PYTHONPATH=src pdoc $PACKAGE_NAME > public/README_api.md
+    - PYTHONPATH=src pdoc --html -o public/html $PACKAGE_NAME
+  artifacts:
+    paths:
+      - public
+
+.docs:
+  extends: .docs-stage
+  except:
+    - master
+    
+.pages:
+  extends: .docs-stage
+  only:
+    - master
+
+.upload-successful:
+  extends: .cache-user
+  stage: upload-successful
+  script:
+    - . venv/bin/activate
+    - if test -n "${TWINE_UPLOAD}" ; then pip install twine; twine upload -u "${TWINE_USERNAME}" --repository-url "${TWINE_REPOSITORY}" dist/*.whl ; fi

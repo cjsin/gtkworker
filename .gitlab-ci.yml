@@ -1,98 +1,27 @@
-image: python:3.9-buster
+include: .gitlab-ci.pymodule.yml
 
 variables:
   PACKAGE_NAME: gtkworker
 
-.cache-paths: &cache-paths
-    paths:
-      - .cache/pip
-      - venv
-
-.cache-user:
-  cache:
-    <<: *cache-paths
-    policy: pull
-
-.cache-creator:
-  cache:
-    <<: *cache-paths
-    policy: push
-
-before_script:
-  - python3 -V  # Print out python version for debugging
-  - env| egrep 'CI_|PIP_' || true
-
-stages:
-  - prep
-  - build
-  - install
-  - test
-  - docs
-
 prep:
-  extends: .cache-creator
-  stage: prep
-  script:
-    - python3 -m venv venv
-    - . venv/bin/activate
-    - pip install --upgrade pip build wheel setuptools
-  tags:
-    - container
+  extends: .prep
 
 build:
-  extends: .cache-user
-  stage: build
-  script:
-    - . venv/bin/activate
-    - python3 -m build
-  artifacts:
-    paths:
-      - dist/*.whl
-  tags:
-    - container
+  extends: .build
 
 test-install:
-  extends: .cache-user
-  stage: install
-  script:
-    - . venv/bin/activate
-    - pip list
-    - pip install dist/*.whl
-    - pip list
-  tags:
-    - container
+  extends: .test-install
 
 test:
-  extends: .cache-user
-  stage: test
-  script:
-    - . venv/bin/activate
-    - pip install dist/*.whl
-    - pytest $PACKAGE_NAME
-  tags:
-    - container
-
-.docs-stage:
-  extends: .cache-user
-  stage: docs
-  script:
-    - . venv/bin/activate
-    - pip install pytest pdoc3 dist/*.whl
-    - mkdir -p public
-    - PYTHONPATH=src pdoc $PACKAGE_NAME > public/README_api.md
-    - PYTHONPATH=src pdoc --html -o public/html $PACKAGE_NAME
-  artifacts:
-    paths:
-      - public
-  tags:
-    - container
+  extends: .pytest
 
 docs:
-  extends: .docs-stage
-  except:
-    - master
+  extends: .docs
     
 pages:
-  extends: .docs-stage
-  only:
-    - master
+  extends: .pages
+
+upload-successful:
+  extends: .upload-successful
+
+
