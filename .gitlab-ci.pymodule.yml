@@ -36,14 +36,16 @@ stages:
   - docs
   - upload-successful
 
+.prep-script-base: &.prep-script-base
+  - python3 -m venv venv
+  - . venv/bin/activate
+  - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
+  - pip install --upgrade pip build wheel setuptools pytest
+
 .prep:
   extends: .cache-creator
   stage: prep
-  script:
-    - python3 -m venv venv
-    - . venv/bin/activate
-    - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
-    - pip install --upgrade pip build wheel setuptools pytest
+  script: *.prep-script-base
   rules:
     - exists:
         - venv/
