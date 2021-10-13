@@ -36,7 +36,7 @@ stages:
   - docs
   - upload-successful
 
-.prep-script-base: &.prep-script-base
+.prep-script-base: &prep-script-base
   - python3 -m venv venv
   - . venv/bin/activate
   - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
@@ -45,7 +45,7 @@ stages:
 .prep:
   extends: .cache-creator
   stage: prep
-  script: *.prep-script-base
+  script: *prep-script-base
   rules:
     - exists:
         - venv/

@@ -4,14 +4,14 @@ variables:
   PACKAGE_NAME: gtkworker
   APT_PKG: libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0
 
-.prep-script-extra: &.prep-script-extra:
+.prep-script-extra: &prep-script-extra:
   - apt-get update
   - apt -y install $APT_PKG
   - pip install pygobject pytest
 
 prep:
   extends: .prep
-  script: [ *.prep-script-base, *.prep-script-extra ]
+  script: [ *prep-script-base, *prep-script-extra ]
 
 build:
   extends: .build
