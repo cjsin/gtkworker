@@ -35,7 +35,7 @@ test:
 
 docs:
   extends: .docs
-    
+
 pages:
   extends: .pages
 
