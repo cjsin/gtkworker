@@ -61,7 +61,7 @@ stages:
   extends: .cache-user
   stage: install
   script:
-    - if test -n "${APT_PKG}"; then apt-get update; apt -y install $APT_PKG ; fi
+    - if test -n "$APT_PKG"; then apt-get update; apt -y install $APT_PKG ; fi
     - . venv/bin/activate
     - pip list
     - pip install dist/*.whl
@@ -108,4 +108,4 @@ stages:
   stage: upload-successful
   script:
     - . venv/bin/activate
-    - if test -n "${TWINE_UPLOAD}"; then pip install twine; twine upload -u "${TWINE_USERNAME}" --repository-url "${TWINE_REPOSITORY}" dist/*.whl ; fi
+    - if test -n "$TWINE_UPLOAD"; then pip install twine; twine upload -u "$TWINE_USERNAME" --repository-url "$TWINE_REPOSITORY" dist/*.whl ; fi

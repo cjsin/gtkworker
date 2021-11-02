@@ -7,11 +7,11 @@ variables:
 .prep-script-extra: &prep-script-extra
   - python3 -m venv venv
   - . venv/bin/activate
-  - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
+  - if test -n "$TWINE_UPLOAD" && test -z "$PIP_EXTRA_INDEX_URL"; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
   - pip install --upgrade pip build wheel setuptools pytest
   - apt-get update
   - apt -y install $APT_PKG
-  - pip install pygobject pytest
+  - pip install pygobject
 
 prep:
   extends: .prep
@@ -31,7 +31,7 @@ test:
   extends: .gtk-test
   script:
     - . venv/bin/activate
-    - pip install dist/*.whl
+    - pip install $PIP_OPTIONS dist/*.whl
     - pip list
     - echo No ci tests yet as it requires a DISPLAY
 
