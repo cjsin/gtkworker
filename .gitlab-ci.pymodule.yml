@@ -39,17 +39,13 @@ stages:
 .prep-script-base: &prep-script-base
   - python3 -m venv venv
   - . venv/bin/activate
-  - if test -n "$TWINE_UPLOAD" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
+  - if test -n "$TWINE_UPLOAD" && test -z "$PIP_EXTRA_INDEX_URL" ; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
   - pip install --upgrade pip build wheel setuptools pytest
 
 .prep:
   extends: .cache-creator
   stage: prep
   script: *prep-script-base
-  rules:
-    - exists:
-        - venv/
-      when: never
 
 .build:
   extends: .cache-user
