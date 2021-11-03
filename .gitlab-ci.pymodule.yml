@@ -1,4 +1,4 @@
-image: image: registry.home:5000/home/bullseye:latest
+image: registry.home:5000/home/bullseye:latest
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
