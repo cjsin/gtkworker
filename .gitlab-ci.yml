@@ -30,8 +30,10 @@ test-install:
 test:
   extends: .gtk-test
   script:
+    - . venv/bin/activate
     - pip install dist/*.whl
-    - pytest $PACKAGE_NAME
+    - pip list
+    - pytest src
 
 docs:
   extends: .docs
