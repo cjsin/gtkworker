@@ -2,7 +2,7 @@ PACKAGE_NAME = gtkworker
 
 include Makefile.pymodule
 
-OPTIONALS    = attrdict
+OPTIONALS    = newattrdict
 
 RUN_MAIN     = $(RUN_PY_MOD) $(PACKAGE_NAME)
 RUN_EXAMPLE1 = $(RUN_PY_MOD) $(PACKAGE_NAME).example1
