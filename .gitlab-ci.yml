@@ -5,8 +5,7 @@ variables:
   APT_PKG: libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0
 
 .prep-script-extra: &prep-script-extra
-  - python3 -m venv venv
-  - . venv/bin/activate
+  - if [[ -d /venv ]]; then . /venv/bin/activate; else python3 -m venv venv; . venv/bin/activate ; fi
   - if test -n "$TWINE_UPLOAD" && test -z "$PIP_EXTRA_INDEX_URL"; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
   - pip install --upgrade pip build wheel setuptools pytest
   - apt-get update
@@ -30,7 +29,7 @@ test-install:
 test:
   extends: .gtk-test
   script:
-    - . venv/bin/activate
+    - if [[ -d /venv ]]; then . /venv/bin/activate; else python3 -m venv venv; . venv/bin/activate ; fi
     - pip install $PIP_OPTIONS dist/*.whl
     - pip list
     - echo No ci tests yet as it requires a DISPLAY
