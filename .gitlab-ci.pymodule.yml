@@ -10,7 +10,6 @@ variables:
 .cache-paths: &cache-paths
   paths:
     - .cache/pip
-    - venv
 
 .cache-user:
   extends: .common
@@ -29,29 +28,22 @@ before_script:
   - env| egrep 'CI_|PIP_|TWINE_' || true
 
 stages:
-  - prep
   - build
   - install
   - test
   - docs
   - upload-successful
 
-.prep-script-base: &prep-script-base
-  - python3 -m venv venv
-  - . venv/bin/activate
-  - if test -n "$TWINE_UPLOAD" && test -z "$PIP_EXTRA_INDEX_URL"; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
-  - pip install --upgrade pip build wheel setuptools pytest
-
-.prep:
-  extends: .cache-creator
-  stage: prep
-  script: *prep-script-base
-
 .build:
   extends: .cache-user
   stage: build
   script:
-    - . venv/bin/activate
+    - if test -d /venv; then . /venv/bin/activate ; else python3 -m venv venv; . venv/bin/activate; fi
+    - pip list
+    - pip install --upgrade pip wheel
+    - pip list
+    - pip install --upgrade build setuptools pytest
+    - pip list
     - python3 -m build
   artifacts:
     paths:
@@ -62,18 +54,25 @@ stages:
   stage: install
   script:
     - if test -n "$APT_PKG"; then apt-get update; apt -y install $APT_PKG ; fi
-    - . venv/bin/activate
+    - if test -d /venv; then . /venv/bin/activate ; else python3 -m venv venv; . venv/bin/activate; fi
     - pip list
-    - pip install dist/*.whl
+    - pip install --upgrade pip wheel
+    - pip list
+    - pip install $PIP_OPTIONS dist/*.whl
     - pip list
 
 .pytest:
   extends: .cache-user
   stage: test
   script:
-    - . venv/bin/activate
-    - pip install dist/*.whl
-    - pytest $PACKAGE_NAME
+    - if test -d /venv; then . /venv/bin/activate ; else python3 -m venv venv; . venv/bin/activate; fi
+    - pip list
+    - pip install --upgrade pip wheel
+    - pip list
+    - pip install --upgrade pytest
+    - pip list
+    - pip install $PIP_OPTIONS dist/*.whl
+    - pytest src
 
 .run-examples:
   extends: .cache-user
@@ -84,8 +83,14 @@ stages:
   extends: .cache-user
   stage: docs
   script:
-    - . venv/bin/activate
-    - pip install pytest pdoc3 dist/*.whl
+    - if test -d /venv; then . /venv/bin/activate ; else python3 -m venv venv; . venv/bin/activate; fi
+    - pip list
+    - pip install --upgrade pip wheel
+    - pip list
+    - pip install pytest pdoc3
+    - pip list
+    - pip install dist/*.whl
+    - pip list
     - mkdir -p public
     - PYTHONPATH=src pdoc $PACKAGE_NAME > public/README_api.md
     - PYTHONPATH=src pdoc --html -o public/html $PACKAGE_NAME
@@ -107,5 +112,8 @@ stages:
   extends: .cache-user
   stage: upload-successful
   script:
-    - . venv/bin/activate
+    - if test -d /venv; then . /venv/bin/activate ; else python3 -m venv venv; . venv/bin/activate; fi
+    - pip list
+    - pip install --upgrade pip wheel
+    - pip list
     - if test -n "$TWINE_UPLOAD"; then pip install twine; twine upload -u "$TWINE_USERNAME" --repository-url "$TWINE_REPOSITORY" dist/*.whl ; fi
