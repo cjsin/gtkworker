@@ -1,5 +1,7 @@
 # Reminder, '=' is lazily evaluated, := is immediately evaluated
 
+MODULE_NAME    ?= $(PACKAGE_NAME)
+
 SHELL          := bash
 # Macros for use in path generation
 empty          :=
@@ -11,13 +13,13 @@ path-gen        = $(join-with $(colon),$1)
 VENV           := venv
 ACTIVATE       := source $(VENV)/bin/activate
 VERSION        := $(shell tr -d ' ' < setup.cfg | awk -F= '/^version=/ {print $$2}')
-DISTWHEEL_GLOB := $(PACKAGE_NAME)-$(VERSION)*-py3-none-any.whl
+DISTWHEEL_GLOB := $(PACKAGE_NAME)-$(VERSION)*.post*-py3-none-any.whl
 DISTWHEEL_LAST  = $(shell echo running distwheel_last 1>&2; ls -tr dist/$(DISTWHEEL_GLOB) 2> /dev/null | head -n1 | cut -d/ -f2-)
 DISTWHEEL      := $(PACKAGE_NAME)-$(VERSION)-py3-none-any.whl
 README         := README.md
 README_API     := README_api.md
 SRC            := src
-SOURCES         = $(shell bash -c 'shopt -s globstar; ls $(SRC)/$(PACKAGE_NAME)/**/*.py')
+SOURCES         = $(shell bash -c 'shopt -s globstar; ls $(SRC)/$(MODULE_NAME)/**/*.py 2> /dev/null')
 PYTHON         := python3
 PIP            := pip
 PYVER          := $(shell $(PYTHON) --version | awk '{print $$2}' | cut -d. -f1-2)
@@ -26,37 +28,39 @@ RUN_PY_MOD     := $(PYTHON) -m
 RUN_TESTS      := pytest $(SRC)
 WITH_VENV      := $(ACTIVATE) &&
 PIP_INSTALL    := $(WITH_VENV) pip install
-WITH_PYPATH    := PYTHONPATH=$(PWD)/$(SRC)
-OPTIONALS      := 
+WITH_PYPATH    := PYTHONPATH=$(CURDIR)/$(SRC)
+OPTIONALS      ?=
 MD_VIEWER      := retext
-DOCS_INDEX     := docs/html/$(PACKAGE_NAME)/index.html
+DOCS_INDEX     := docs/html/$(MODULE_NAME)/index.html
 TWINE_UPLOAD   ?= ""
 UPLOAD_WHEEL    = twine upload -r "$(TWINE_UPLOAD)"
-PYLINT_DISABLED = invalid-name \
-                  line-too-long \
-                  trailing-newlines \
-                  bare-except \
-				  use-dict-literal \
-				  unspecified-encoding \
-				  consider-using-f-string \
-                  unused-wildcard-import \
-                  wildcard-import \
-                  unused-import \
-                  wrong-import-position \
-                  import-error \
-                  missing-function-docstring \
-                  missing-module-docstring \
-                  missing-class-docstring \
-                  too-few-public-methods \
-                  too-many-instance-attributes \
-                  too-many-arguments \
-                  too-many-branches \
-                  too-many-nested-blocks \
-                  too-many-statements \
-                  too-many-public-methods \
-                  too-many-locals
+PYLINT_DISABLED =	invalid-name \
+					trailing-newlines \
+					bare-except \
+					use-dict-literal \
+					unspecified-encoding \
+					consider-using-f-string \
+					line-too-long \
+					unused-wildcard-import \
+					wildcard-import \
+					import-error \
+					missing-function-docstring \
+					missing-module-docstring \
+					missing-class-docstring \
+					too-few-public-methods \
+					too-many-instance-attributes \
+					too-many-arguments \
+					too-many-branches \
+					too-many-nested-blocks \
+					too-many-statements \
+					too-many-public-methods \
+					too-many-locals \
+					duplicate-code \
+					$(EXTRA_PYLINT_DISABLED)
 
-PYLINT_FLAGS   := -d $(call join-with,$(comma),$(PYLINT_DISABLED))
+PYLINT_FLAGS   :=	$(PYLINT_C_EXTENSIONS) \
+					-d $(call join-with,$(comma),$(PYLINT_DISABLED))
+
 CLEAN_PATTERNS := \
     build \
     dist \
@@ -74,6 +78,7 @@ all: build
 print-vars:
 	@echo "PYVER_NODOTS   = $(PYVER_NODOTS)"
 	@echo "PACKAGE_NAME   = $(PACKAGE_NAME)"
+	@echo "MODULE_NAME    = $(MODULE_NAME)"
 	@echo "DISTWHEEL_GLOB = $(DISTWHEEL_GLOB)"
 	@echo "DISTWHEEL_LAST = $(DISTWHEEL_LAST)"
 	@echo "DISTWHEEL      = $(DISTWHEEL)"
@@ -81,6 +86,7 @@ print-vars:
 
 version:
 	@echo Package: $(PACKAGE_NAME)
+	@echo Package: $(MODULE_NAME)
 	@echo Version: $(VERSION)
 	@echo Wheel:   $(DISTWHEEL)
 	@echo Sources: $(SOURCES)
@@ -89,20 +95,20 @@ dist-clean:
 	rm -f dist/*.*
 
 lint: venv
-	$(WITH_VENV) pylint $(PYLINT_FLAGS) $(SRC)
+	$(WITH_VENV) $(WITH_PYPATH) pylint $(PYLINT_FLAGS) $(SRC)
 
 $(README_API): venv $(SOURCES)
-	$(WITH_VENV) $(WITH_PYPATH) pdoc $(PACKAGE_NAME) > $(README_API)
+	$(WITH_VENV) $(WITH_PYPATH) pdoc $(MODULE_NAME) > $(README_API)
 
 docs-html: venv
 	mkdir -p docs
-	$(WITH_VENV) $(WITH_PYPATH) pdoc --html -o docs/html $(PACKAGE_NAME)
+	$(WITH_VENV) $(WITH_PYPATH) pdoc --html -o docs/html $(MODULE_NAME)
 
 docs: $(README_API) clean-docs docs-html
 
 view-docs: docs
 	command -v $(MD_VIEWER) && $(MD_VIEWER) README*.md || echo "Markdown viewer not installed" &
-	xdg-open file://$(PWD)/$(DOCS_INDEX) &
+	xdg-open file://$(CURDIR)/$(DOCS_INDEX) &
 
 build-reqs: venv
 	($(WITH_VENV) pip list | egrep '^build[[:space:]]') || ( $(PIP_INSTALL) --upgrade build )
@@ -116,7 +122,7 @@ build-reqs: venv
 	echo "copy-distwheel-last:$(shell ls -tr dist/$(DISTWHEEL_GLOB) 2> /dev/null | head -n1 | cut -d/ -f2-)"
 	echo test -f "dist/$(DISTWHEEL_LAST)"
 	test -f "dist/$(DISTWHEEL_LAST)"
-	cp "dist/$(DISTWHEEL_LAST)" "$(DISTWHEEL)"
+	cp -a "dist/$(DISTWHEEL_LAST)" dist/"$(DISTWHEEL)"
 
 .perform-build: .run-build .copy-distwheel-last
 
@@ -125,7 +131,9 @@ build: dist-clean build-reqs .perform-build
 
 .PHONY:: dist
 dist: $(DISTWHEEL)
+
 dist/$(DISTWHEEL): build
+	make .copy-distwheel-last
 
 $(DISTWHEEL): dist/$(DISTWHEEL)
 	cp dist/$(DISTWHEEL) ./
@@ -143,6 +151,8 @@ clean-venv:
 
 .create-venv:
 	$(PYTHON) -m venv $(VENV)
+
+venv-base:
 	$(PIP_INSTALL) --upgrade pip wheel
 
 venv-dev-base:
@@ -152,9 +162,14 @@ venv-dev-base:
 venv-run-base:
 	if test -n "$(OPTIONALS)" ; then $(PIP_INSTALL) $(OPTIONALS) ; fi
 
+venv-requirements: venv
+	$(PIP_INSTALL) -r requirements.txt
+
 venv-additional::
 
-create-venv: .create-venv venv-dev-base venv-additional
+venv-packages: venv venv-base venv-dev-base venv-requirements venv-additional
+
+create-venv: .create-venv venv-packages
 
 .PHONY:: venv
 venv:
@@ -163,7 +178,7 @@ venv:
 venv-install: venv $(DISTWHEEL)
 	$(PIP_INSTALL) --force-reinstall $(DISTWHEEL)
 
-venv-shell: venv
+venv-shell: venv-packages
 	$(ACTIVATE) && bash -i
 
 upload-release:
