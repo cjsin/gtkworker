@@ -36,6 +36,9 @@ PYLINT_DISABLED = invalid-name \
                   line-too-long \
                   trailing-newlines \
                   bare-except \
+				  use-dict-literal \
+				  unspecified-encoding \
+				  consider-using-f-string \
                   unused-wildcard-import \
                   wildcard-import \
                   unused-import \
