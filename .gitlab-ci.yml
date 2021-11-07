@@ -4,17 +4,13 @@ variables:
   PACKAGE_NAME: gtkworker
   APT_PKG: libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0
 
-.prep-script-extra: &prep-script-extra
-  - if [[ -d /venv ]]; then . /venv/bin/activate; else python3 -m venv venv; . venv/bin/activate ; fi
-  - if test -n "$TWINE_UPLOAD" && test -z "$PIP_EXTRA_INDEX_URL"; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
-  - pip install --upgrade pip build wheel setuptools pytest
-  - apt-get update
-  - apt -y install $APT_PKG
-  - pip install pygobject
-
-prep:
-  extends: .prep
-  script: *prep-script-extra
+# .prep-script-extra: &prep-script-extra
+#   - if [[ -d /venv ]]; then . /venv/bin/activate; else python3 -m venv venv; . venv/bin/activate ; fi
+#   - if test -n "$TWINE_UPLOAD" && test -z "$PIP_EXTRA_INDEX_URL"; then export PIP_EXTRA_INDEX_URL=$TWINE_REPOSITORY/simple/ ; fi
+#   - pip install --upgrade pip build wheel setuptools pytest
+#   - apt-get update
+#   - apt -y install $APT_PKG
+#   - pip install pygobject
 
 build:
   extends: .build
