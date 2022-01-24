@@ -119,9 +119,9 @@ build-reqs: venv
 	rm -rf $(SRC)/*.egg-info
 
 .copy-distwheel-last:
-	echo "copy-distwheel-last:$(shell ls -tr dist/$(DISTWHEEL_GLOB) 2> /dev/null | head -n1 | cut -d/ -f2-)"
-	echo test -f "dist/$(DISTWHEEL_LAST)"
-	test -f "dist/$(DISTWHEEL_LAST)"
+	#echo "copy-distwheel-last:$(shell ls -tr dist/$(DISTWHEEL_GLOB) 2> /dev/null | head -n1 | cut -d/ -f2-)"
+	@test -n "$(DISTWHEEL_LAST)" || ( echo "No DISTWHEEL_LAST found!" 1>&2; false)
+	@test -f "dist/$(DISTWHEEL_LAST)" || ( echo "File not found: DISTWHEEL_LAST=$(DISTWHEEL_LAST)" 1>&2; false)
 	cp -a "dist/$(DISTWHEEL_LAST)" dist/"$(DISTWHEEL)"
 
 .perform-build: .run-build .copy-distwheel-last
@@ -134,6 +134,12 @@ dist: $(DISTWHEEL)
 
 dist/$(DISTWHEEL): build
 	make .copy-distwheel-last
+
+distinstall:
+	make $(DISTWHEEL) &&  pip install --force $(DISTWHEEL)
+
+pipupgrade:
+	$(WITH_VENV) pip install --upgrade pip
 
 $(DISTWHEEL): dist/$(DISTWHEEL)
 	cp dist/$(DISTWHEEL) ./
